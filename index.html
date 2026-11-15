@@ -1,0 +1,145 @@
+
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Min huskeliste</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      margin: 0;
+      padding: 30px 15px;
+    }
+    .app {
+      max-width: 450px;
+      margin: 30px auto;
+      padding: 25px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 5px 20px #0001;
+    }
+    h1 { color: #1e293b; }
+    .ny-opgave { display: flex; gap: 8px; }
+    input {
+      padding: 12px;
+      min-width: 0;
+      flex: 1;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    button {
+      padding: 10px 15px;
+      background: #2563eb;
+      color: white;
+      border: 0;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; }
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    li span { flex: 1; overflow-wrap: anywhere; }
+    li.faerdig span {
+      text-decoration: line-through;
+      color: gray;
+    }
+    li button { background: #dc2626; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Min huskeliste</h1>
+    <p>Her kan jeg holde styr på mine opgaver.</p>
+
+    <form id="formular" class="ny-opgave">
+      <input id="opgave" placeholder="Ny opgave" required>
+      <button type="submit">Tilføj</button>
+    </form>
+
+    <ul id="liste"></ul>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    const felt = document.getElementById("opgave");
+    const liste = document.getElementById("liste");
+    const status = document.getElementById("status");
+
+    let opgaver;
+    try {
+      opgaver = JSON.parse(
+        localStorage.getItem("mineOpgaver") || "[]"
+      );
+      if (!Array.isArray(opgaver)) opgaver = [];
+    } catch {
+      opgaver = [];
+    }
+
+    function gem() {
+      localStorage.setItem(
+        "mineOpgaver",
+        JSON.stringify(opgaver)
+      );
+    }
+
+    function vis() {
+      liste.replaceChildren();
+
+      opgaver.forEach((opgave, indeks) => {
+        const li = document.createElement("li");
+        if (opgave.faerdig) li.className = "faerdig";
+
+        const check = document.createElement("input");
+        check.type = "checkbox";
+        check.checked = opgave.faerdig;
+        check.onchange = () => {
+          opgave.faerdig = check.checked;
+          gem();
+          vis();
+        };
+
+        const tekst = document.createElement("span");
+        tekst.textContent = opgave.tekst;
+
+        const slet = document.createElement("button");
+        slet.textContent = "Slet";
+        slet.onclick = () => {
+          opgaver.splice(indeks, 1);
+          gem();
+          vis();
+        };
+
+        li.append(check, tekst, slet);
+        liste.appendChild(li);
+      });
+
+      const antal = opgaver.filter(o => o.faerdig).length;
+      status.textContent =
+        `${antal} af ${opgaver.length} opgaver færdige`;
+    }
+
+    document.getElementById("formular")
+      .addEventListener("submit", event => {
+        event.preventDefault();
+
+        const tekst = felt.value.trim();
+        if (!tekst) return;
+
+        opgaver.push({ tekst, faerdig: false });
+        gem();
+        vis();
+        felt.value = "";
+        felt.focus();
+      });
+
+    vis();
+  </script>
+</body>
+</html>
